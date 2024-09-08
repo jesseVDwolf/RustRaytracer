@@ -7,7 +7,7 @@ use std::error::Error;
 use serde::Deserialize;
 
 use raylib::prelude::*;
-use itertools::iproduct;
+use itertools::{iproduct, Itertools};
 
 /*
 Goal of this Project is to build a RayTracer. A raytracer is a program
@@ -50,7 +50,7 @@ use vec::Vec3;
 use point::Point3;
 use ray::Ray;
 use ppm::render_ppm_image_ascii;
-use color::ColorRGBA;
+use color::RGBAColor;
 
 #[derive(Debug, Deserialize, Clone)]
 struct Config {
@@ -64,7 +64,7 @@ fn read_config_from_file<P: AsRef<Path>>(path: P) -> Result<Config, Box<dyn Erro
     let reader = BufReader::new(file);
 
     // Read the JSON contents of the file as an instance of `Config`.
-    let config = serde_json::from_reader(reader)?;
+    let config: Config = serde_json::from_reader(reader)?;
 
     // Return the `Config`
     Ok(config)
@@ -82,6 +82,75 @@ impl fmt::Display for ArgumentError {
 impl Error for ArgumentError {}
 
 
+struct Window {
+    // The window represents the screen that shows all pixels.
+    // It is created by providing a width. The aspect ratio is 
+    // used to calculate a proper height
+    pub width: i32,
+    pub height: i32
+}
+
+impl Window {
+    pub fn new(width: i32) -> Self {
+        // aspect ratio 16/9 (width to height)
+        let aspect_ratio: f64 = 16.0 / 9.0;
+
+        let height = (width as f64 / aspect_ratio) as i32;
+        assert!(height > 1);
+        Self { width, height }
+    }
+}
+
+
+struct Camera {
+    // The camera is the location from which the rays are shot.
+    // Each ray shot through the viewport originates at the camera
+    // origin.
+    location: Point3
+}
+
+impl Camera {
+    pub fn new(location: Point3) -> Self {
+        Self { location }
+    }
+}
+
+
+struct Viewport {
+    // The viewport described the small window through which
+    // the rays are shot into the world. This is a 2D plane in
+    // front of the camera.
+    starting_pixel: Vec3,
+    pixel_delta_u: Vec3,
+    pixel_delta_v: Vec3
+}
+
+impl Viewport {
+    pub fn new(window: &Window, camera: &Camera) -> Self {
+        // The viewport is a 2D rectangle in front of the camera where
+        // we are shooting our rays through. Its important that we define
+        // its height and width using our choosen aspect ratio.
+        let focal_length = 1.0;     // focal length is the length from origin to the viewport
+        let viewport_height = 2.0;
+        let viewport_width = viewport_height * (window.width as f64 / window.height as f64);
+
+        // We need two vectors across horizontal and down the vertical viewport edges
+        let viewport_u = Vec3::new(viewport_width, 0.0, 0.0);
+        let viewport_v = Vec3::new(0.0, -viewport_height, 0.0);
+
+        // We also need two vectors that define that span the distance between two pixels.
+        let pixel_delta_u = viewport_u / window.width as f64;
+        let pixel_delta_v = viewport_v / window.height as f64;
+
+        // Get a vector to the upper left pixel by using the focal lenght and our viewport vectors
+        // then use our delta pixels to get the exact location of the pixel itself.
+        let viewport_upper_left = camera.location - Vec3::new(0.0, 0.0, focal_length) - (viewport_u/2.0) - (viewport_v / 2.0);
+        let starting_pixel = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
+        Self { starting_pixel, pixel_delta_u, pixel_delta_v }
+    }
+}
+
+
 fn main() -> Result<(), Box<dyn Error>> {
 
     // 1sth argument should be a path object
@@ -97,58 +166,56 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     dbg!(config.clone());
 
-    // aspect ratio 16/9 (width to height)
-    let aspect_ratio = 16.0 / 9.0;
     let image_width = 1024;
+    let window = Window::new(image_width);
+    let camera = Camera::new(Point3::new(0.0, 0.0, 0.0));
+    let viewport = Viewport::new(&window, &camera);
+ 
+    let (mut rl, thread) = raylib::init()
+        .size(window.width, window.height)
+        .title("Raytracer")
+        .build();
+     
+    while !rl.window_should_close() {
+        let mut d = rl.begin_drawing(&thread);
 
-    let image_height = (image_width as f64 / aspect_ratio) as i32;
-    // image height must be > 1
+        // clear the display
+        d.clear_background(Color::WHITE);
 
-    // Camera information
-    // The viewport is a 2D rectangle in front of the camera where
-    // we are shooting our rays through. Its important that we define
-    // its height and width using our choosen aspect ratio.
-    let focal_length = 1.0;     // focal length is the length from origin to the viewport
-    let viewport_height = 2.0;
-    let viewport_width = viewport_height * (image_width as i32 / image_height) as f64;
-    let camera_center = Point3::new(0.0, 0.0, 0.0);
+        // shoot each ray into the scene and check what the returned color looks like
+        for (y, x) in iproduct!(0..window.height, 0..window.width) {
+            let pixel_center = viewport.starting_pixel + (x as f64 * viewport.pixel_delta_u) + (y as f64 * viewport.pixel_delta_v);
+            let ray_direction = pixel_center - camera.location;
+            let ray = Ray::new(camera.location, ray_direction);
 
-    // We need two vectors across horizontal and down the vertical viewport edges
-    let viewport_u = Vec3::new(viewport_width, 0.0, 0.0);
-    let viewport_v = Vec3::new(0.0, -viewport_height, 0.0);
+            let object = &config.objects
+                .iter()
+                .find(|o| o.intersect(&ray));
+            let color = match object {
+                Some(&sphere) => {
+                    let hits = sphere.intersect_hits(&ray).unwrap();
+                    let h = hits.first().unwrap();
 
-    // We also need two vectors that define that span the distance between two pixels.
-    let pixel_delta_u = viewport_u / viewport_width;
-    let pixel_delta_v = viewport_v / viewport_height;
-
-    // Get a vector to the upper left pixel by using the focal lenght and our viewport vectors
-    // then use our delta pixels to get the exact location of the pixel itself.
-    let viewport_upper_left = camera_center - Vec3::new(0.0, 0.0, focal_length) - (viewport_u/2.0) - (viewport_v / 2.0);
-    let starting_pixel = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
-
-    let pixels: Vec<(u8, u8, u8)> = iproduct!(0..image_height, 0..image_width)
-        .map(|(j, i)| {
-            let pixel_center = starting_pixel + (i as f64 * pixel_delta_u) + (i as f64 * pixel_delta_v);
-            let ray_direction = pixel_center - camera_center;
-            let ray = Ray::new(pixel_center, ray_direction);
-            
-            let color = ColorRGBA::white_blue_blend_over_y(&ray);
-            (color.r as u8, color.g as u8, color.b as u8)
-        })
-        .collect();
-
-    let output_file_path = Path::new("output.ppm");
-    render_ppm_image_ascii(output_file_path, image_height, image_width, 255, &pixels);
-
-    let ray = Ray::new(
-        Vec3{x: 0.0, y: 0.0, z: 0.0},
-        Vec3{x: 1.0, y: 0.0, z: 0.0}
-    );
-    let sphere = config.objects[0];
-    let intersect = sphere.intersect(&ray);
-
-    println!("intersect: {}", intersect);
-
+                    // for now a nice color created using the normal
+                    if h.t > 0.0 {
+                        let c = RGBAColor::new(
+                            h.normal.x as f32 + 1.0,
+                            h.normal.y as f32 + 1.0,
+                            h.normal.z as f32 + 1.0
+                        ).unwrap();
+                        c * 0.5 * 255.99
+                    }
+                    else {
+                        RGBAColor::white_blue_blend_over_y(&ray)
+                    }
+                },
+                None => {
+                    RGBAColor::white_blue_blend_over_y(&ray)
+                }
+            };
+            d.draw_pixel(x, y, color);
+        }
+    }
 
     Ok(())
 }
