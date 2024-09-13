@@ -164,8 +164,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let p = &args[1];
     let config = read_config_from_file(p)?;
 
-    dbg!(config.clone());
-
     let image_width = 1024;
     let window = Window::new(image_width);
     let camera = Camera::new(Point3::new(0.0, 0.0, 0.0));
