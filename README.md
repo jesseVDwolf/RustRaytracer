@@ -6,7 +6,7 @@
 - [ ] Lighting in scene
 - [ ] Shadows are rendered
 - [x] Raylib windowing
-- [ ] move camera around
+- [x] move camera around
 
 ## Config
 The objects can be configured a local JSON file. The path to the JSON file should be passed as an argument to the program.

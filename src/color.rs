@@ -1,10 +1,11 @@
 use std::ops;
 use raylib::ffi::Color;
+use serde::Deserialize;
 
 use crate::ray::Ray;
 
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Deserialize)]
 pub struct RGBAColor {
     pub r: f32,
     pub g: f32,

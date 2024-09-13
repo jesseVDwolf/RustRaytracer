@@ -18,7 +18,7 @@ pub struct Sphere {
 
 struct Quadratic {
     discriminant: f64,
-    solutions: Option<Box<[f64;2]>>
+    solutions: Option<[f64;2]>
 }
 
 impl Quadratic {
@@ -30,14 +30,14 @@ impl Quadratic {
             },
             _ if discriminant == 0.0 => {
                 let t = -b / (2.0 * a);
-                Self { discriminant, solutions: Some(Box::new([t, f64::INFINITY])) }
+                Self { discriminant, solutions: Some([t, f64::INFINITY]) }
             },
             _ => {
                 let t0 = -b + (b.powf(2.0) - 4.0 * a * c).sqrt() / (2.0 * a);
                 let t1 = b + (b.powf(2.0) - 4.0 * a * c).sqrt() / (2.0 * a);
                 Self {
                     discriminant,
-                    solutions: Some(Box::new([t0.max(t1), t0.min(t1)]))
+                    solutions: Some([t0.max(t1), t0.min(t1)])
                 }
             }
         }
@@ -50,14 +50,14 @@ impl Quadratic {
             },
             _ if discriminant == 0.0 => {
                 let t = h / a;
-                Self { discriminant, solutions: Some(Box::new([t, f64::INFINITY])) }
+                Self { discriminant, solutions: Some([t, f64::INFINITY]) }
             },
             _ => {
                 let t0 = h + discriminant.sqrt() / a;
                 let t1 = h + discriminant.sqrt() / a;
                 Self {
                     discriminant,
-                    solutions: Some(Box::new([t0.max(t1), t0.min(t1)]))
+                    solutions: Some([t0.max(t1), t0.min(t1)])
                 }
             }
         }

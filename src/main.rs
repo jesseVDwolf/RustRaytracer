@@ -38,6 +38,7 @@ Components:
 */
 
 mod sphere;
+mod plane;
 mod ppm;
 mod vec;
 mod point;
@@ -46,16 +47,17 @@ mod hit;
 mod color;
 
 use sphere::Sphere;
+use plane::Plane;
 use vec::Vec3;
 use point::Point3;
 use ray::Ray;
-use ppm::render_ppm_image_ascii;
 use color::RGBAColor;
 
 #[derive(Debug, Deserialize, Clone)]
 struct Config {
     version: String,
-    objects: Vec<Sphere>
+    spheres: Vec<Sphere>,
+    planes: Vec<Plane>
 }
 
 fn read_config_from_file<P: AsRef<Path>>(path: P) -> Result<Config, Box<dyn Error>> {
@@ -150,13 +152,39 @@ impl Viewport {
     }
 }
 
+fn move_camera_on_key_press(rl: &RaylibHandle, camera: &mut Camera) {
+    let step_size = 0.5;
+
+    if rl.is_key_pressed(KeyboardKey::KEY_W) || rl.is_key_pressed(KeyboardKey::KEY_UP) {
+        println!("Moving forward.");
+        camera.location.z += step_size;
+    }
+    if rl.is_key_pressed(KeyboardKey::KEY_S) || rl.is_key_pressed(KeyboardKey::KEY_DOWN) {
+        println!("Moving backwards.");
+        camera.location.z -= step_size;
+    }
+    if rl.is_key_pressed(KeyboardKey::KEY_A) || rl.is_key_pressed(KeyboardKey::KEY_LEFT){
+        println!("Moving to the left.");
+        camera.location.x += step_size;
+    }
+    if rl.is_key_pressed(KeyboardKey::KEY_D) || rl.is_key_pressed(KeyboardKey::KEY_RIGHT) {
+        println!("Moving to the right.");
+        camera.location.x -= step_size;
+    }
+    if rl.is_key_pressed(KeyboardKey::KEY_SPACE) {
+        println!("Moving up.");
+        camera.location.y -= step_size;
+    }
+    if rl.is_key_pressed(KeyboardKey::KEY_LEFT_SHIFT) {
+        println!("Moving down.");
+        camera.location.y += step_size;
+    }
+}
 
 fn main() -> Result<(), Box<dyn Error>> {
 
     // 1sth argument should be a path object
     let args: Vec<String> = env::args().collect();
-    dbg!(args.clone());
-
     if args.len() != 2 {
         return Err(Box::new(ArgumentError));
     }
@@ -166,7 +194,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let image_width = 1024;
     let window = Window::new(image_width);
-    let camera = Camera::new(Point3::new(0.0, 0.0, 0.0));
+    let mut camera = Camera::new(Point3::new(0.0, 0.0, 0.0));
     let viewport = Viewport::new(&window, &camera);
  
     let (mut rl, thread) = raylib::init()
@@ -175,10 +203,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         .build();
      
     while !rl.window_should_close() {
+
+        // first check if any key was pressed. If so, update the camera position.
+        move_camera_on_key_press(&rl, &mut camera);
+
         let mut d = rl.begin_drawing(&thread);
 
         // clear the display
         d.clear_background(Color::WHITE);
+
 
         // shoot each ray into the scene and check what the returned color looks like
         for (y, x) in iproduct!(0..window.height, 0..window.width) {
@@ -186,7 +219,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let ray_direction = pixel_center - camera.location;
             let ray = Ray::new(camera.location, ray_direction);
 
-            let object = &config.objects
+            let object = &config.spheres
                 .iter()
                 .find(|o| o.intersect(&ray));
             let color = match object {
