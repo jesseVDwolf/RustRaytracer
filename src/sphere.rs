@@ -34,7 +34,7 @@ impl Quadratic {
             },
             _ => {
                 let t0 = -b + (b.powf(2.0) - 4.0 * a * c).sqrt() / (2.0 * a);
-                let t1 = b + (b.powf(2.0) - 4.0 * a * c).sqrt() / (2.0 * a);
+                let t1 = -b + (b.powf(2.0) - 4.0 * a * c).sqrt() / (2.0 * a);
                 Self {
                     discriminant,
                     solutions: Some(vec![t0.max(t1), t0.min(t1)])
