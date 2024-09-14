@@ -32,6 +32,22 @@ So from here we can see:
 - $b = -2d \cdot (C - Q)$
 - $c = (C - Q) \cdot (C - Q)$
 
+### Planes
+You can describe infinity planes using an origin $O$ and orientation $N$. To describe a point on the plane you can use the property of the dot product $\cdot$ that says that two perpendicular vectors should have a dot product of 0.
+
+The formula is as follows:  
+$(\vec{x}-\vec{P})\cdot\vec{N}$  
+
+Where $\vec{x}$ is the "potential" point on the plane, $\vec{P}$ is the origin of the plane (a reference) and $\vec{N}$ is the orientation of the plane.
+
+We can then subsitute the ray formula $f(x)=t\vec{d}+Q$ into the formula and solve for t:
+- $((t\vec{d} + Q) - \vec{P})\cdot\vec{N}=0$
+- $(t\vec{d} + (Q - \vec{P}))\cdot\vec{N}=0$
+- $((t\vec{d})\cdot\vec{N}) + (Q - \vec{P}) \cdot \vec{N}=0$
+- $t(\vec{d}\cdot\vec{N}) + (Q - \vec{P}) \cdot \vec{N}=0$
+- $t(\vec{d}\cdot\vec{N})=-((Q - \vec{P}) \cdot \vec{N})$
+- $t=\frac{-(Q - \vec{P}) \cdot \vec{N}}{(\vec{d}\cdot\vec{N})}$
+
 ## Sources
 * Homogeneous coordinates: https://www.youtube.com/watch?v=o-xwmTODTUI
 * Raytracing guid: https://raytracing.github.io/books/RayTracingInOneWeekend.html

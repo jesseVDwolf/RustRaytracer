@@ -3,6 +3,7 @@ use serde::Deserialize;
 use crate::point::Point3;
 use crate::ray::Ray;
 use crate::hit::Hit;
+use crate::traits::Intersectable;
 use crate::vec::Vec3;
 
 
@@ -94,11 +95,16 @@ impl Sphere {
         Quadratic::new_with_discriminant(a, h, discriminant)
     }
 
-    pub fn intersect(&self, r: &Ray) -> bool {
+    
+}
+
+impl Intersectable for Sphere {
+    
+    fn intersect(&self, r: &Ray) -> bool {
         self.get_quadratic(r).discriminant >= 0.0
     }
-
-    pub fn intersect_hits(&self, r: &Ray) -> Option<Vec<Hit>> {
+    
+    fn intersect_hits(&self, r: &Ray) -> Option<Vec<Hit>> {
         // Follow the ray and find the intersections with the sphere.
         // There are some options here.
         // 1. The ray is outside of the sphere and hits the sphere two times.

@@ -88,3 +88,33 @@ impl ops::Div<f64> for Vec3 {
         (1.0 / rhs) * self
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_vector_dot_same() {
+        let v1 = Vec3{x: 0.0, y: 0.0, z: 1.0};
+        let v2 = Vec3{x: 0.0, y: 0.0, z:1.0};
+
+        assert!(v1.dot(&v2) == 1.0);
+    }
+
+    #[test]
+    fn test_vector_dot_opposite() {
+        let v1 = Vec3{x: 0.0, y: 0.0, z: 1.0};
+        let v2 = Vec3{x: 0.0, y: 0.0, z:-1.0};
+
+        assert!(v1.dot(&v2) == -1.0);
+    }
+
+    #[test]
+    fn test_vector_dot_perpendicular() {
+        let v1 = Vec3{x: 0.0, y: 0.0, z: 1.0};
+        let v2 = Vec3{x: 0.0, y: 1.0, z:0.0};
+
+        assert!(v1.dot(&v2) == 0.0);
+    }
+}

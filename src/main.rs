@@ -45,6 +45,7 @@ mod point;
 mod ray;
 mod hit;
 mod color;
+mod traits;
 
 use sphere::Sphere;
 use plane::Plane;
@@ -52,6 +53,7 @@ use vec::Vec3;
 use point::Point3;
 use ray::Ray;
 use color::RGBAColor;
+use traits::Intersectable;
 
 #[derive(Debug, Deserialize, Clone)]
 struct Config {
@@ -201,6 +203,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         .size(window.width, window.height)
         .title("Raytracer")
         .build();
+
+    let mut intersectables: Vec<Box<dyn Intersectable>> = Vec::new();
+    for sphere in config.spheres {
+        intersectables.push(Box::new(sphere));
+    }
+    for plane in config.planes {
+        intersectables.push(Box::new(plane));
+    }
      
     while !rl.window_should_close() {
 
@@ -219,12 +229,15 @@ fn main() -> Result<(), Box<dyn Error>> {
             let ray_direction = pixel_center - camera.location;
             let ray = Ray::new(camera.location, ray_direction);
 
-            let object = &config.spheres
+            // TODO find() short-circuits meaning you could have objects
+            // behind one another and render the wrong one.
+            let intersectable = intersectables
                 .iter()
                 .find(|o| o.intersect(&ray));
-            let color = match object {
-                Some(&sphere) => {
-                    let hits = sphere.intersect_hits(&ray).unwrap();
+            
+            let color = match intersectable {
+                Some(object) => {
+                    let hits = object.intersect_hits(&ray).unwrap();
                     let h = hits.first().unwrap();
 
                     // for now a nice color created using the normal
