@@ -36,9 +36,9 @@ So from here we can see:
 You can describe infinity planes using an origin $O$ and orientation $N$. To describe a point on the plane you can use the property of the dot product $\cdot$ that says that two perpendicular vectors should have a dot product of 0.
 
 The formula is as follows:  
-$(\vec{x}-\vec{P})\cdot\vec{N}$  
+$(\vec{x}-\vec{P})\cdot\vec{N}=0$  
 
-Where $\vec{x}$ is the "potential" point on the plane, $\vec{P}$ is the origin of the plane (a reference) and $\vec{N}$ is the orientation of the plane.
+Where $\vec{x}$ is the "potential" point on the plane, $\vec{P}$ is the origin of the plane (could be any point on the plane) and $\vec{N}$ is the orientation of the plane.
 
 We can then subsitute the ray formula $f(x)=t\vec{d}+Q$ into the formula and solve for t:
 - $((t\vec{d} + Q) - \vec{P})\cdot\vec{N}=0$
@@ -47,6 +47,7 @@ We can then subsitute the ray formula $f(x)=t\vec{d}+Q$ into the formula and sol
 - $t(\vec{d}\cdot\vec{N}) + (Q - \vec{P}) \cdot \vec{N}=0$
 - $t(\vec{d}\cdot\vec{N})=-((Q - \vec{P}) \cdot \vec{N})$
 - $t=\frac{-(Q - \vec{P}) \cdot \vec{N}}{(\vec{d}\cdot\vec{N})}$
+- $t=\frac{(\vec{P} - Q) \cdot \vec{N}}{(\vec{d}\cdot\vec{N})}$
 
 ## Sources
 * Homogeneous coordinates: https://www.youtube.com/watch?v=o-xwmTODTUI
